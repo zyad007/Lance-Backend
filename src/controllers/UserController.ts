@@ -16,28 +16,32 @@ export const login: RequestHandler = async (req, res, next) => {
 
     try {
         const { email, password }: LoginType = req.body;
-        
+
         const user = await UserModel.getByEmail(email);
 
-        if(!user) return next(new NotFound('There is no user with this email'));
+        if (!user) return next(new NotFound('There is no user with this email'));
 
         const checkPass = await compare(password, user.password);
 
-        if(!checkPass) return next(new NotAuthorized('Invalid password'));
+        if (!checkPass) return next(new NotAuthorized('Invalid password'));
 
         const token = sign({
             id: user.id,
             createdAt: new Date()
         }, process.env.SECRET as string);
 
-        return res.status(200).send({
-            id: user.id,
-            fullName: user.firstName + ' ' + user.lastName,
-            email: user.email,
-            gender: user.gender,
-            dateOfBirth: user.dateOfBirth,
-            token,
-        });
+        return res.status(200).send(new Result(
+            true,
+            '',
+            {
+                id: user.id,
+                fullName: user.firstName + ' ' + user.lastName,
+                email: user.email,
+                gender: user.gender,
+                dateOfBirth: user.dateOfBirth,
+                token,
+            }
+        ));
     }
 
     catch (e) {
@@ -76,14 +80,18 @@ export const register: RequestHandler = async (req, res, next) => {
             createdAt: new Date()
         }, process.env.SECRET as string)
 
-        return res.status(200).send({
-            id: result.id,
-            fullName: result.firstName + ' ' + result.lastName,
-            email: result.email,
-            gender: result.gender,
-            dateOfBirth: result.dateOfBirth,
-            token,
-        });
+        return res.status(200).send(new Result(
+            true,
+            '',
+            {
+                id: result.id,
+                fullName: result.firstName + ' ' + result.lastName,
+                email: result.email,
+                gender: result.gender,
+                dateOfBirth: result.dateOfBirth,
+                token,
+            }
+        ));
     }
 
     catch (e) {
@@ -97,13 +105,13 @@ export const forgotPassword: RequestHandler = async (req, res, next) => {
 
     try {
 
-        const {email}: ForgotPassword = req.body;
+        const { email }: ForgotPassword = req.body;
 
         const user = await UserModel.getByEmail(email);
 
-        if(!user) return next(new BadRequest('There is no user with this email'));
+        if (!user) return next(new BadRequest('There is no user with this email'));
 
-        const resetPasswordToken = Math.random().toString(36).substring(2,20);
+        const resetPasswordToken = Math.random().toString(36).substring(2, 20);
 
         const newUser = await UserModel.updateById(user.id, { resetPasswordToken });
 
@@ -115,29 +123,29 @@ export const forgotPassword: RequestHandler = async (req, res, next) => {
         ))
     }
 
-    catch(e) {
+    catch (e) {
         next(e)
     }
 }
 
 export const resetPassword: RequestHandler = async (req, res, next) => {
     try {
-        const {resetPasswordToken, newPassword}: ResetPassword = req.body;
+        const { resetPasswordToken, newPassword }: ResetPassword = req.body;
 
         const user = await UserModel.getOne({ resetPasswordToken });
 
-        if(!user) return next(new NotFound('User not found or invalid token'));
+        if (!user) return next(new NotFound('User not found or invalid token'));
 
         const newPasswordHash = await hash(newPassword, 10);
 
-        await UserModel.updateById(user.id, { password: newPasswordHash, resetPasswordToken:'' });
+        await UserModel.updateById(user.id, { password: newPasswordHash, resetPasswordToken: '', passwordCreateDate: new Date() });
 
         res.status(200).send(new Result(
             true,
             'Your password have been changed succesffully!'
         ))
     }
-    catch(e) {
+    catch (e) {
         next(e)
     }
 }
