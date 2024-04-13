@@ -6,8 +6,9 @@ export interface Admin extends Base {
     lastName: string,
     email: string,
     password: string,
-    passwordCreateData: Date,
+    passwordCreateDate: Date,
     accountStatus: 'ACTIVE' | 'DISABLED',
-    accountCreateData: Date
+    accountCreateDate: Date,
+    resetPasswordToken: string
     
 }

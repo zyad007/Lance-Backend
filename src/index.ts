@@ -1,6 +1,7 @@
 import express, { json } from "express";
 import { globalErrorHandler } from "./middlewares/handlers/GlobalErrorHandler";
 import userRouter from "./api/UserRouter";
+import adminRouter from "./api/AdminRouter";
 
 console.log('ENV:' + process.env.NODE_ENV);
 
@@ -12,6 +13,7 @@ app.use(json());
 
 // Routers Middleware
 app.use('/user', userRouter);
+app.use('/admin', adminRouter);
 
 // Error Hadler Middleware
 app.use(globalErrorHandler);
