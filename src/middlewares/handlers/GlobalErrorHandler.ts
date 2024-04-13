@@ -1,28 +1,49 @@
 import { NextFunction, Request, Response } from "express";
-import BadRequestError from "../../errors/BadRequest";
 import { Result } from "../../dto/Result";
+import NotAuthorized from "../../errors/NotAuthorized";
+import { DatabaseError } from "pg";
+import BadRequest from "../../errors/BadRequest";
 
-export const globalErrorHandler = (err: Error, req: Request, res: Response, next: NextFunction ) => {
+export const globalErrorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
 
-    let status: number;
 
-    if(err instanceof BadRequestError) {
-        status = 400;
-
-        return res.status(status).send(new Result(
+    if (err instanceof BadRequest) {
+        return res.status(400).send(new Result(
             false,
             '',
             {
-                ...err
+                handler: 'GLOBAL_ERROR_HANDLER',
+                ...err,
+                message: err.message
             }
-        )
-        )
-
-    }else {
-        status = 500
+        ))
     }
 
-    res.status(status).send(new Result(
+    if (err instanceof NotAuthorized) {
+        return res.status(401).send(new Result(
+            false,
+            '',
+            {
+                handler: 'GLOBAL_ERROR_HANDLER',
+                ...err,
+                message: err.message
+            }
+        ))
+    }
+
+    if (err instanceof DatabaseError) {
+        return res.status(500).send(new Result(
+            false,
+            '',
+            {
+                handler: 'GLOBAL_ERROR_HANDLER',
+                name: 'DataBaseError',
+                message: err.message
+            }))
+    }
+
+
+    res.status(500).send(new Result(
         false,
         '',
         {
