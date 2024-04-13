@@ -11,7 +11,8 @@ export interface User extends Base {
     dateOfBirth: Date,
     accountStatus: 'ACTIVE' | 'DISABLED',
     accountCreateDate: Date,
-    emailValidation: boolean
-    gender: 'MALE' | 'FEMALE'
+    emailValidation: boolean,
+    gender: 'MALE' | 'FEMALE',
+    resetPasswordToken: string
 
 }
