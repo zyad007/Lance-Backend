@@ -10,5 +10,6 @@ date_of_birth DATE NOT NULL,
 account_status VARCHAR (50) NOT NULL,
 account_create_date DATE NOT NULL DEFAULT CURRENT_DATE,
 email_validation VARCHAR(50) NOT NULL,
-gender VARCHAR (50) NOT NULL
+gender VARCHAR (50) NOT NULL,
+reset_password_token VARCHAR(255),
 );
