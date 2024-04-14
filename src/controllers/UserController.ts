@@ -13,6 +13,7 @@ import { Result } from "../dto/Result";
 import { ResetPassword } from "../schemas/ResetPassword";
 import { UserSearch } from "../schemas/UserSearch";
 import { AccountStatus } from "../enum/AccountStatus";
+import { sendMail } from "../utils/email";
 
 export const login: RequestHandler = async (req, res, next) => {
 
@@ -159,6 +160,7 @@ export const forgotPassword: RequestHandler = async (req, res, next) => {
         const newUser = await UserModel.updateById(user.id, { resetPasswordToken });
 
         //Send Email with token
+        await sendMail('zizo.zoom.z0@gmail.com', newUser.email, 'Reset Password', resetPasswordToken);
 
         return res.status(200).send(new Result(
             true,
