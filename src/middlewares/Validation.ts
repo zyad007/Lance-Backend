@@ -21,6 +21,22 @@ export const bodyValidation = (schema: AnyZodObject) => {
 
 } 
 
+export const queryValidation = (schema: AnyZodObject) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+
+        try {
+            await schema.parseAsync({query: req.query});
+            return next();
+        }
+        catch(error) {
+            if(error instanceof ZodError) {
+                return next(new BadRequest('Invalid payload', error.issues.map(x => x.message)));
+            }
+            throw next(new BadRequest(JSON.stringify(error)));
+        }
+    }
+}
+
 export const paramValidation = (schema: AnyZodObject) => {
 
     return async (req: Request, res: Response, next: NextFunction) => {

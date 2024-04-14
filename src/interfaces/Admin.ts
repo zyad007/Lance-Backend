@@ -1,3 +1,4 @@
+import { AccountStatus } from "../enum/AccountStatus";
 import Base from "./Base";
 
 export interface Admin extends Base {
@@ -7,7 +8,7 @@ export interface Admin extends Base {
     email: string,
     password: string,
     passwordCreateDate: Date,
-    accountStatus: 'ACTIVE' | 'DISABLED',
+    accountStatus: AccountStatus,
     accountCreateDate: Date,
     resetPasswordToken: string
     
