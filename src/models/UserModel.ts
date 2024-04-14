@@ -36,7 +36,7 @@ export const create = async (user: User) => {
 
 }
 
-export const getById = async (id: number) => {
+export const getById = async (id: number = 0) => {
     const { rows } = await query('SELECT * FROM users WHERE id=$1', [id])
 
     if (!rows[0]) {
@@ -67,13 +67,14 @@ export const deleteById = async (id: number) => {
 }
 
 
-export const updateById = async (id: number, newProps: any) => {
+export const updateById = async (id: number = 0, newProps: any) => {
 
     const querys: string[] = [];
     const values: any[] = [];
 
     let i = 2;
     for (const [key, value] of Object.entries(newProps)) {
+        if(!value) continue;
         querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
         i++;
@@ -95,6 +96,7 @@ export const getOne = async (props: any) => {
 
     let i = 1;
     for (const [key, value] of Object.entries(props)) {
+        if(!value) continue;
         querys.push(camleToSnake(key) + '=' + '$' + i );
         values.push(value);
         i++;
@@ -114,8 +116,10 @@ export const getMany = async (props: any) => {
 
     let i = 1;
     for (const [key, value] of Object.entries(props)) {
+        if(!value) continue;
         querys.push(camleToSnake(key) + '=' + '$' + i );
         values.push(value);
+        i++;
     }
 
     const queryText = `SELECT * FROM users WHERE ${querys.join(' AND ')}`;
@@ -125,8 +129,47 @@ export const getMany = async (props: any) => {
     return rows.map(x => recursiveToCamel(x) as User);
 }
 
+export const search = async (props: any, page: number = 1) => {
+    const querys: string[] = [];
+    const values: any[] = [];
 
+    let i = 1;
+    for (const [key, value] of Object.entries(props)) {
+        if(!value) continue;
+        querys.push(camleToSnake(key) + ' LIKE ' + '$' + i);
+        values.push('%'+value+'%');
+        i++;
+    }
 
+    let queryText = `SELECT * FROM users WHERE ${querys.join(' OR ')} \
+    LIMIT 10 OFFSET (($${i} - 1) * 10)`;
+
+    if(values.length === 0) {
+        queryText = queryText.replace('WHERE', '');
+    }
+    
+    if(page < 1) page = 1;
+
+    const { rows } = await query(queryText, [...values, page]);
+
+    return rows.map(x => recursiveToCamel(x) as User);
+}
+
+const UserModel = {
+    create,
+    getById,
+    getAll,
+    getOne,
+    getMany,
+    updateById,
+    deleteById,
+    getByEmail,
+    search
+}
+
+export default UserModel;
+
+//////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {
     if (Array.isArray(item)) {
         return item.map(el => recursiveToCamel(el));

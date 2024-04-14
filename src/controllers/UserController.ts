@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { LoginType } from "../schemas/Login";
 import { UserResgister } from "../schemas/UserResgister";
-import * as UserModel from "../models/UserModel"
+import UserModel from "../models/UserModel"
 import { compare, hash } from "bcrypt";
 import { User } from "../interfaces/User";
 import { sign, decode } from "jsonwebtoken";
@@ -11,6 +11,8 @@ import { ForgotPassword } from "../schemas/ForgotPassword";
 import BadRequest from "../errors/BadRequest";
 import { Result } from "../dto/Result";
 import { ResetPassword } from "../schemas/ResetPassword";
+import { UserSearch } from "../schemas/UserSearch";
+import { AccountStatus } from "../enum/AccountStatus";
 
 export const login: RequestHandler = async (req, res, next) => {
 
@@ -101,6 +103,47 @@ export const register: RequestHandler = async (req, res, next) => {
 }
 
 
+export const create: RequestHandler = async (req, res, next) => {
+
+    try {
+
+        const userData = req.body as UserResgister;
+
+        const passwordHash = await hash(userData.password, 10);
+
+        const user = {
+            id: 0,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            country: userData.country,
+            dateOfBirth: userData.dateOfBirth,
+            gender: userData.gender,
+            emailValidation: false,
+            accountStatus: "ACTIVE",
+            password: passwordHash,
+            accountCreateDate: new Date(),
+            passwordCreateDate: new Date()
+        }
+
+        const result = await UserModel.create(user as User)
+
+        return res.status(200).send(new Result(
+            true,
+            'User created',
+            {
+                id: result.id
+            }
+        ));
+    }
+
+    catch (e) {
+        next(e);
+    }
+
+}
+
+
 export const forgotPassword: RequestHandler = async (req, res, next) => {
 
     try {
@@ -148,4 +191,157 @@ export const resetPassword: RequestHandler = async (req, res, next) => {
     catch (e) {
         next(e)
     }
+}
+
+export const getAll: RequestHandler = async (req, res, next) => {
+
+    try {
+        let query = {};
+        Object.assign(query , req.query);
+        const {firstName, lastName, email, page}: UserSearch = query;
+
+        const admins = await UserModel.search({ firstName, lastName, email }, page );
+
+        res.status(200).send(new Result(
+            true,
+            admins.length+'',
+            admins
+        ))
+
+    }
+
+    catch(e) {
+        next(e);
+    }
+
+}
+
+export const deleteAdmin: RequestHandler<{ id: string }> = async (req, res, next) => {
+    try {
+
+        const {id} = req.params;
+
+        const admin = await UserModel.getById(~~(+id));
+
+        if(!admin) return next(new NotFound('No user with this ID'));
+
+        await UserModel.deleteById(admin.id);
+
+        return res.status(200).send(new Result(
+            true,
+            `User with Id:${id} deleted`
+        ));
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
+export const get: RequestHandler<{ id: string }> = async (req, res, next) => {
+    try {
+
+        const {id} = req.params;
+
+        const admin = await UserModel.getById(~~(+id));
+
+        if(!admin) return next(new NotFound('No user with this ID'));
+
+        return res.status(200).send(new Result(
+            true,
+            '',
+            admin
+        ));
+
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
+export const update: RequestHandler<{ id: string }> = async (req, res, next) => {
+    try {
+
+        const {id} = req.params;
+
+        const admin = await UserModel.getById(~~(+id));
+
+        if(!admin) return next(new NotFound('No user with this ID'));
+
+        const newAdmin = await UserModel.updateById(~~(+id), req.body );
+
+        return res.status(200).send(new Result(
+            true,
+            "Admin updated successfully",
+            newAdmin
+        ))
+
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
+export const activate: RequestHandler<{ id: string }> = async (req, res, next) => {
+    try {
+
+        const {id} = req.params;
+
+        const admin = await UserModel.getById(~~(+id));
+
+        if(!admin) return next(new NotFound('No user with this ID'));
+
+        const newAdmin = await UserModel.updateById(~~(+id), {accountStatus: AccountStatus.ACTIVE} );
+
+        return res.status(200).send(new Result(
+            true,
+            "Admin disabled successfully",
+            newAdmin
+        ))
+
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
+
+export const disable: RequestHandler<{ id: string }> = async (req, res, next) => {
+    try {
+
+        const {id} = req.params;
+
+        const admin = await UserModel.getById(~~(+id));
+
+        if(!admin) return next(new NotFound('No user with this ID'));
+
+        const newAdmin = await UserModel.updateById(~~(+id), {accountStatus: AccountStatus.DISABLED} );
+
+        return res.status(200).send(new Result(
+            true,
+            "Admin disabled successfully",
+            newAdmin
+        ))
+
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
+export const getProfile: RequestHandler<{ id: string }> = async (req, res, next) => {
+    
+    try {
+
+        return res.status(200).send(new Result(
+            true,
+            "",
+            req.body.user
+        ))
+
+    }
+    
+    catch(e) {
+        next(e)
+    }
+
 }

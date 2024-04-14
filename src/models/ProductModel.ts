@@ -99,7 +99,19 @@ export const getMany = async (props: any) => {
 }
 
 
+const ProductModel = {
+    create,
+    getById,
+    getAll,
+    getOne,
+    getMany,
+    updateById,
+    deleteById
+}
 
+export default ProductModel;
+
+//////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {
     if (Array.isArray(item)) {
         return item.map(el => recursiveToCamel(el));

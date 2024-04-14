@@ -19,7 +19,9 @@ export const create = async (admin: Admin) => {
         admin.lastName,
         admin.email,
         admin.password,
-        admin.accountStatus
+        admin.passwordCreateDate,
+        admin.accountStatus,
+        admin.accountCreateDate
     ])
 
     const res: Admin = recursiveToCamel(rows[0])
@@ -65,6 +67,7 @@ export const updateById = async (id: number, newProps: any) => {
 
     let i = 2;
     for (const [key, value] of Object.entries(newProps)) {
+        if(!value) continue;
         querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
         i++;
@@ -86,7 +89,8 @@ export const getOne = async (props: any) => {
 
     let i = 1;
     for (const [key, value] of Object.entries(props)) {
-        querys.push(camleToSnake(key) + '=' + '$' + i );
+        if(!value) continue;
+        querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
         i++;
     }
@@ -99,23 +103,65 @@ export const getOne = async (props: any) => {
     return admin;
 }
 
-export const getMany = async (props: any) => {
+export const getMany = async (props: any, page: number) => {
     const querys: string[] = [];
     const values: any[] = [];
 
     let i = 1;
     for (const [key, value] of Object.entries(props)) {
-        querys.push(camleToSnake(key) + '=' + '$' + i );
+        if(!value) continue;
+        querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
+        i++;
     }
 
-    const queryText = `SELECT * FROM admins WHERE ${querys.join(' AND ')}`;
+    const queryText = `SELECT * FROM admins WHERE ${querys.join(' AND ')} \
+    LIMIT 10 OFFSET {($${i} - 1) * 10}`;
 
-    const { rows } = await query(queryText, [...values]);
+    const { rows } = await query(queryText, [...values, page]);
 
     return rows.map(x => recursiveToCamel(x) as Admin);
 }
 
+export const search = async (props: any, page: number = 1) => {
+    const querys: string[] = [];
+    const values: any[] = [];
+
+    let i = 1;
+    for (const [key, value] of Object.entries(props)) {
+        if(!value) continue;
+        querys.push(camleToSnake(key) + ' LIKE ' + '$' + i);
+        values.push('%'+value+'%');
+        i++;
+    }
+
+    let queryText = `SELECT * FROM admins WHERE ${querys.join(' OR ')} \
+    LIMIT 10 OFFSET (($${i} - 1) * 10)`;
+    
+    if(values.length === 0) {
+        queryText = queryText.replace('WHERE', '');
+    }
+    
+    if(page < 1) page = 1;
+
+    const { rows } = await query(queryText, [...values, page]);
+
+    return rows.map(x => recursiveToCamel(x) as Admin);
+}
+
+const AdminModel = {
+    create,
+    getById,
+    getAll,
+    getOne,
+    getMany,
+    updateById,
+    deleteById,
+    getByEmail,
+    search
+}
+
+export default AdminModel;
 
 //////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {

@@ -1,7 +1,7 @@
 import { query } from "../db";
 import { UserProduct } from "../interfaces/UserProduct";
 
-export const create = async (userProduct: UserProduct) => {
+const create = async (userProduct: UserProduct) => {
 
     const queryText = 'INSERT INTO user_product ( \
     user_id, \
@@ -18,7 +18,7 @@ export const create = async (userProduct: UserProduct) => {
 
 }
 
-export const getById = async (id: number) => {
+const getById = async (id: number) => {
     const { rows } = await query('SELECT * FROM user_product WHERE id=$1', [id])
 
     if (!rows[0]) {
@@ -29,18 +29,18 @@ export const getById = async (id: number) => {
     return product
 }
 
-export const getAll = async () => {
+const getAll = async () => {
     const { rows } = await query('SELECT * FROM products', []);
     return rows.map(x => recursiveToCamel(x) as UserProduct);
 }
 
-export const deleteById = async (id: number) => {
+const deleteById = async (id: number) => {
     await query('DELETE FROM user_product WHERE id=$1', [id]);
     return
 }
 
 
-export const updateById = async (id: number, newProps: any) => {
+const updateById = async (id: number, newProps: any) => {
 
     const querys: string[] = [];
     const values: any[] = [];
@@ -62,7 +62,7 @@ export const updateById = async (id: number, newProps: any) => {
     return userProduct;
 }
 
-export const getOne = async (props: any) => {
+const getOne = async (props: any) => {
     const querys: string[] = [];
     const values: any[] = [];
 
@@ -81,7 +81,7 @@ export const getOne = async (props: any) => {
     return userProduct;
 }
 
-export const getMany = async (props: any) => {
+const getMany = async (props: any) => {
     const querys: string[] = [];
     const values: any[] = [];
 
@@ -98,6 +98,18 @@ export const getMany = async (props: any) => {
     return rows.map(x => recursiveToCamel(x) as UserProduct);
 }
 
+
+export const UserProductModel = {
+    create,
+    getById,
+    getAll,
+    getOne,
+    getMany,
+    updateById,
+    deleteById
+}
+
+export default UserProductModel;
 
 //////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {

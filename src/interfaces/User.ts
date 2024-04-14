@@ -1,3 +1,4 @@
+import { AccountStatus } from "../enum/AccountStatus";
 import Base from "./Base";
 
 export interface User extends Base {
@@ -9,7 +10,7 @@ export interface User extends Base {
     passwordCreateDate: Date,
     country: string,
     dateOfBirth: Date,
-    accountStatus: 'ACTIVE' | 'DISABLED',
+    accountStatus: AccountStatus,
     accountCreateDate: Date,
     emailValidation: boolean,
     gender: 'MALE' | 'FEMALE',
