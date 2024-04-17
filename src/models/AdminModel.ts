@@ -149,6 +149,15 @@ export const search = async (props: any, page: number = 1) => {
     return rows.map(x => recursiveToCamel(x) as Admin);
 }
 
+const count = async () => {
+
+    const {rows} = await query('SELECT COUNT(*) FROM users', []);
+
+    return rows[0];
+
+}
+
+
 const AdminModel = {
     create,
     getById,
@@ -158,7 +167,8 @@ const AdminModel = {
     updateById,
     deleteById,
     getByEmail,
-    search
+    search,
+    count
 }
 
 export default AdminModel;
@@ -166,16 +176,20 @@ export default AdminModel;
 //////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {
     if (Array.isArray(item)) {
-        return item.map(el => recursiveToCamel(el));
+      return item.map((el: unknown) => recursiveToCamel(el));
     } else if (typeof item === 'function' || item !== Object(item)) {
+      return item;
+    } else if ( item instanceof Date ) {
         return item;
     }
     return Object.fromEntries(
-        Object.entries(item).map(([key, value]) => [
-            key.replace(/([-_][a-z])/gi, c => c.toUpperCase().replace(/[-_]/g, '')),
-            recursiveToCamel(value),
-        ]),
+      Object.entries(item as Record<string, unknown>).map(
+        ([key, value]: [string, unknown]) => [
+          key.replace(/([-_][a-z])/gi, c => c.toUpperCase().replace(/[-_]/g, '')),
+          recursiveToCamel(value),
+        ],
+      ),
     );
-};
+  };
 
 const camleToSnake = (str: string) => str.split(/(?=[A-Z])/).join('_').toLowerCase();

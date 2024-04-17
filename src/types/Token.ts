@@ -1,4 +1,5 @@
 export type Token = {
     id: number,
-    createdAt: Date
+    createdAt: Date,
+    role: 'ADMIN' | 'USER'
 }

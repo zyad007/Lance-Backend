@@ -16,6 +16,7 @@ import { AdminCreate } from "../schemas/AdminCreate";
 import { AdminSearch } from "../schemas/AdminSearch";
 import { date } from "zod";
 import { AccountStatus } from "../enum/AccountStatus";
+import { Token } from "../types/Token";
 
 export const login: RequestHandler = async (req, res, next) => {
 
@@ -32,8 +33,9 @@ export const login: RequestHandler = async (req, res, next) => {
 
         const token = sign({
             id: user.id,
-            createdAt: new Date()
-        }, process.env.SECRET as string);
+            createdAt: new Date(),
+            role: "ADMIN"
+        } as Token, process.env.SECRET as string);
 
         return res.status(200).send(new Result(
             true,
@@ -76,8 +78,9 @@ export const create: RequestHandler = async (req, res, next) => {
 
         const token = sign({
             id: result.id,
-            createdAt: new Date()
-        }, process.env.SECRET as string)
+            createdAt: new Date(),
+            role: "ADMIN"
+        } as Token, process.env.SECRET as string)
 
         return res.status(200).send(new Result(
             true,
@@ -155,10 +158,18 @@ export const getAll: RequestHandler = async (req, res, next) => {
 
         const admins = await AdminModel.search({ firstName, lastName, email }, page);
 
+        const {count} = await AdminModel.count();
+
         res.status(200).send(new Result(
             true,
-            admins.length + '',
-            admins
+            count,
+            admins.map(x => {
+                return {
+                    ...x,
+                    passwordCreateDate: x.passwordCreateDate.toLocaleString(),
+                    accountCreateDate: x.accountCreateDate.toLocaleString()
+                }
+            })
         ))
 
     }
@@ -172,11 +183,11 @@ export const getAll: RequestHandler = async (req, res, next) => {
 export const deleteAdmin: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
         const admin = await AdminModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No admin with this ID'));
+        if (!admin) return next(new NotFound('No admin with this ID'));
 
         await AdminModel.deleteById(admin.id);
 
@@ -193,11 +204,11 @@ export const deleteAdmin: RequestHandler<{ id: string }> = async (req, res, next
 export const get: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
         const admin = await AdminModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No admin with this ID'));
+        if (!admin) return next(new NotFound('No admin with this ID'));
 
         return res.status(200).send(new Result(
             true,
@@ -214,13 +225,13 @@ export const get: RequestHandler<{ id: string }> = async (req, res, next) => {
 export const update: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
         const admin = await AdminModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No admin with this ID'));
+        if (!admin) return next(new NotFound('No admin with this ID'));
 
-        const newAdmin = await AdminModel.updateById(~~(+id), req.body );
+        const newAdmin = await AdminModel.updateById(~~(+id), req.body);
 
         return res.status(200).send(new Result(
             true,
@@ -237,13 +248,13 @@ export const update: RequestHandler<{ id: string }> = async (req, res, next) => 
 export const activate: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
         const admin = await AdminModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No admin with this ID'));
+        if (!admin) return next(new NotFound('No admin with this ID'));
 
-        const newAdmin = await AdminModel.updateById(~~(+id), {accountStatus: AccountStatus.ACTIVE} );
+        const newAdmin = await AdminModel.updateById(~~(+id), { accountStatus: AccountStatus.ACTIVE });
 
         return res.status(200).send(new Result(
             true,
@@ -261,13 +272,13 @@ export const activate: RequestHandler<{ id: string }> = async (req, res, next) =
 export const disable: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
         const admin = await AdminModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No admin with this ID'));
+        if (!admin) return next(new NotFound('No admin with this ID'));
 
-        const newAdmin = await AdminModel.updateById(~~(+id), {accountStatus: AccountStatus.DISABLED} );
+        const newAdmin = await AdminModel.updateById(~~(+id), { accountStatus: AccountStatus.DISABLED });
 
         return res.status(200).send(new Result(
             true,
