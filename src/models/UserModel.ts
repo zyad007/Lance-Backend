@@ -149,7 +149,7 @@ export const search = async (props: any, page: number = 1) => {
         i++;
     }
 
-    let queryText = `SELECT * FROM users WHERE ${querys.join(' OR ')} \
+    let queryText = `SELECT * , count(*) OVER() AS count FROM users WHERE ${querys.join(' OR ')} \
     LIMIT 10 OFFSET (($${i} - 1) * 10)`;
 
     if(values.length === 0) {
@@ -160,7 +160,7 @@ export const search = async (props: any, page: number = 1) => {
 
     const { rows } = await query(queryText, [...values, page]);
 
-    return rows.map((x) => recursiveToCamel(x) as User);
+    return [ rows.map((x) => recursiveToCamel(x) as User), rows[0] ? rows[0].count : 0 ];
 }
 
 const count = async () => {

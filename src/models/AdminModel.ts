@@ -131,11 +131,11 @@ export const search = async (props: any, page: number = 1) => {
     for (const [key, value] of Object.entries(props)) {
         if(!value) continue;
         querys.push(camleToSnake(key) + ' LIKE ' + '$' + i);
-        values.push('%'+value+'%');
+        values.push('%'+value);
         i++;
     }
 
-    let queryText = `SELECT * FROM admins WHERE ${querys.join(' OR ')} \
+    let queryText = `SELECT *, count(*) OVER() AS count FROM admins WHERE ${querys.join(' OR ')} \
     LIMIT 10 OFFSET (($${i} - 1) * 10)`;
     
     if(values.length === 0) {
@@ -146,12 +146,14 @@ export const search = async (props: any, page: number = 1) => {
 
     const { rows } = await query(queryText, [...values, page]);
 
-    return rows.map(x => recursiveToCamel(x) as Admin);
+    console.log(rows);
+
+    return [rows.map(x => recursiveToCamel(x) as Admin), rows[0] ? rows[0].count : 0 ];
 }
 
 const count = async () => {
 
-    const {rows} = await query('SELECT COUNT(*) FROM users', []);
+    const {rows} = await query('SELECT COUNT(*) FROM admins', []);
 
     return rows[0];
 
