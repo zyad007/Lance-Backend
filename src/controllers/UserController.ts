@@ -205,14 +205,14 @@ export const getAll: RequestHandler = async (req, res, next) => {
         Object.assign(query, req.query);
         const { firstName, lastName, email, page }: UserSearch = query;
 
-        const users = await UserModel.search({ firstName, lastName, email }, page);
+        let [users, count] = await UserModel.search({ firstName, lastName, email }, page);
 
-        const {count} = await UserModel.count();
-        
+        // if(count === -1) count = await UserModel.count();
+
         res.status(200).send(new Result(
             true,
-            count,
-            users.map(x => {
+            count+'',
+            users.map((x: User) => {
                 return {
                     ...x,
                     passwordCreateDate: x.passwordCreateDate.toLocaleString(),
