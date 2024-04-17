@@ -14,6 +14,7 @@ import { ResetPassword } from "../schemas/ResetPassword";
 import { UserSearch } from "../schemas/UserSearch";
 import { AccountStatus } from "../enum/AccountStatus";
 import { sendMail } from "../utils/email";
+import { Token } from "../types/Token";
 
 export const login: RequestHandler = async (req, res, next) => {
 
@@ -30,8 +31,9 @@ export const login: RequestHandler = async (req, res, next) => {
 
         const token = sign({
             id: user.id,
-            createdAt: new Date()
-        }, process.env.SECRET as string);
+            createdAt: new Date(),
+            role: 'USER'
+        } as Token, process.env.SECRET as string);
 
         return res.status(200).send(new Result(
             true,
@@ -80,8 +82,9 @@ export const register: RequestHandler = async (req, res, next) => {
 
         const token = sign({
             id: result.id,
-            createdAt: new Date()
-        }, process.env.SECRET as string)
+            createdAt: new Date(),
+            role: "USER"
+        } as Token, process.env.SECRET as string)
 
         return res.status(200).send(new Result(
             true,
@@ -199,20 +202,29 @@ export const getAll: RequestHandler = async (req, res, next) => {
 
     try {
         let query = {};
-        Object.assign(query , req.query);
-        const {firstName, lastName, email, page}: UserSearch = query;
+        Object.assign(query, req.query);
+        const { firstName, lastName, email, page }: UserSearch = query;
 
-        const admins = await UserModel.search({ firstName, lastName, email }, page );
+        const users = await UserModel.search({ firstName, lastName, email }, page);
 
+        const {count} = await UserModel.count();
+        
         res.status(200).send(new Result(
             true,
-            admins.length+'',
-            admins
+            count,
+            users.map(x => {
+                return {
+                    ...x,
+                    passwordCreateDate: x.passwordCreateDate.toLocaleString(),
+                    accountCreateDate: x.accountCreateDate.toLocaleString(),
+                    dateOfBirth: x.dateOfBirth.toLocaleDateString()
+                }
+            })
         ))
 
     }
 
-    catch(e) {
+    catch (e) {
         next(e);
     }
 
@@ -221,13 +233,13 @@ export const getAll: RequestHandler = async (req, res, next) => {
 export const deleteAdmin: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
-        const admin = await UserModel.getById(~~(+id));
+        const user = await UserModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No user with this ID'));
+        if (!user) return next(new NotFound('No user with this ID'));
 
-        await UserModel.deleteById(admin.id);
+        await UserModel.deleteById(user.id);
 
         return res.status(200).send(new Result(
             true,
@@ -242,16 +254,16 @@ export const deleteAdmin: RequestHandler<{ id: string }> = async (req, res, next
 export const get: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
-        const admin = await UserModel.getById(~~(+id));
+        const user = await UserModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No user with this ID'));
+        if (!user) return next(new NotFound('No user with this ID'));
 
         return res.status(200).send(new Result(
             true,
             '',
-            admin
+            user
         ));
 
     }
@@ -263,18 +275,18 @@ export const get: RequestHandler<{ id: string }> = async (req, res, next) => {
 export const update: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
-        const admin = await UserModel.getById(~~(+id));
+        const user = await UserModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No user with this ID'));
+        if (!user) return next(new NotFound('No user with this ID'));
 
-        const newAdmin = await UserModel.updateById(~~(+id), req.body );
+        const newUser = await UserModel.updateById(~~(+id), req.body);
 
         return res.status(200).send(new Result(
             true,
-            "Admin updated successfully",
-            newAdmin
+            "User updated successfully",
+            newUser
         ))
 
     }
@@ -286,18 +298,18 @@ export const update: RequestHandler<{ id: string }> = async (req, res, next) => 
 export const activate: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
-        const admin = await UserModel.getById(~~(+id));
+        const user = await UserModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No user with this ID'));
+        if (!user) return next(new NotFound('No user with this ID'));
 
-        const newAdmin = await UserModel.updateById(~~(+id), {accountStatus: AccountStatus.ACTIVE} );
+        const newUser = await UserModel.updateById(~~(+id), { accountStatus: AccountStatus.ACTIVE });
 
         return res.status(200).send(new Result(
             true,
-            "Admin disabled successfully",
-            newAdmin
+            "User disabled successfully",
+            newUser
         ))
 
     }
@@ -310,18 +322,18 @@ export const activate: RequestHandler<{ id: string }> = async (req, res, next) =
 export const disable: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
-        const {id} = req.params;
+        const { id } = req.params;
 
-        const admin = await UserModel.getById(~~(+id));
+        const user = await UserModel.getById(~~(+id));
 
-        if(!admin) return next(new NotFound('No user with this ID'));
+        if (!user) return next(new NotFound('No user with this ID'));
 
-        const newAdmin = await UserModel.updateById(~~(+id), {accountStatus: AccountStatus.DISABLED} );
+        const newUser = await UserModel.updateById(~~(+id), { accountStatus: AccountStatus.DISABLED });
 
         return res.status(200).send(new Result(
             true,
-            "Admin disabled successfully",
-            newAdmin
+            "User disabled successfully",
+            newUser
         ))
 
     }
@@ -331,7 +343,7 @@ export const disable: RequestHandler<{ id: string }> = async (req, res, next) =>
 }
 
 export const getProfile: RequestHandler<{ id: string }> = async (req, res, next) => {
-    
+
     try {
 
         return res.status(200).send(new Result(
@@ -341,8 +353,8 @@ export const getProfile: RequestHandler<{ id: string }> = async (req, res, next)
         ))
 
     }
-    
-    catch(e) {
+
+    catch (e) {
         next(e)
     }
 

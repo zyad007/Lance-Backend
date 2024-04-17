@@ -3,6 +3,7 @@ import { globalErrorHandler } from "./middlewares/handlers/GlobalErrorHandler";
 import userRouter from "./api/UserRouter";
 import adminRouter from "./api/AdminRouter";
 import { sendMail } from "./utils/email";
+import cors from 'cors'
 
 console.log('ENV:' + process.env.NODE_ENV);
 
@@ -10,6 +11,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // JSON Parser Middleware
+app.use(cors())
 app.use(json());
 
 // Routers Middleware

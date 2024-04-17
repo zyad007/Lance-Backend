@@ -49,7 +49,15 @@ export const getById = async (id: number = 0) => {
 
 export const getAll = async () => {
     const { rows } = await query('SELECT * FROM users', []);
-    return rows.map(x => recursiveToCamel(x) as User);
+    return rows.map((x:User) => {
+        const newX = recursiveToCamel(x);
+        return {
+            ...x,
+            accountCreateDate: new Date(x.accountCreateDate),
+            passwordCreateDate: new Date(x.passwordCreateDate),
+            dateOfBirth: new Date(x.dateOfBirth)
+        } as User;
+    });
 }
 
 export const getByEmail = async (email: string) => {
@@ -152,7 +160,15 @@ export const search = async (props: any, page: number = 1) => {
 
     const { rows } = await query(queryText, [...values, page]);
 
-    return rows.map(x => recursiveToCamel(x) as User);
+    return rows.map((x) => recursiveToCamel(x) as User);
+}
+
+const count = async () => {
+
+    const {rows} = await query('SELECT COUNT(*) FROM users', []);
+
+    return rows[0];
+
 }
 
 const UserModel = {
@@ -164,7 +180,8 @@ const UserModel = {
     updateById,
     deleteById,
     getByEmail,
-    search
+    search,
+    count
 }
 
 export default UserModel;
@@ -172,16 +189,21 @@ export default UserModel;
 //////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {
     if (Array.isArray(item)) {
-        return item.map(el => recursiveToCamel(el));
+      return item.map((el: unknown) => recursiveToCamel(el));
     } else if (typeof item === 'function' || item !== Object(item)) {
+      return item;
+    } else if ( item instanceof Date ) {
         return item;
     }
     return Object.fromEntries(
-        Object.entries(item).map(([key, value]) => [
-            key.replace(/([-_][a-z])/gi, c => c.toUpperCase().replace(/[-_]/g, '')),
-            recursiveToCamel(value),
-        ]),
+      Object.entries(item as Record<string, unknown>).map(
+        ([key, value]: [string, unknown]) => [
+          key.replace(/([-_][a-z])/gi, c => c.toUpperCase().replace(/[-_]/g, '')),
+          recursiveToCamel(value),
+        ],
+      ),
     );
-};
+  };
+
 
 const camleToSnake = (str: string) => str.split(/(?=[A-Z])/).join('_').toLowerCase();
