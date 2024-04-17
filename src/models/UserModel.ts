@@ -88,8 +88,6 @@ export const updateById = async (id: number = 0, newProps: any) => {
         i++;
     }
 
-    console.log(querys);
-
     const queryText = `UPDATE users SET ${querys.join(',')} WHERE id = $1 RETURNING *`
 
     const { rows } = await query(queryText, [id, ...values]);
@@ -150,7 +148,7 @@ export const search = async (props: any, page: number = 1) => {
     }
 
     let queryText = `SELECT * , count(*) OVER() AS count FROM users WHERE ${querys.join(' OR ')} \
-    LIMIT 10 OFFSET (($${i} - 1) * 10)`;
+    ORDER BY id ASC LIMIT 10 OFFSET (($${i} - 1) * 10)`;
 
     if(values.length === 0) {
         queryText = queryText.replace('WHERE', '');

@@ -29,7 +29,7 @@ userRouter.post('/create', bodyValidation(UserResgisterSchema), UserController.c
 
 userRouter.put('/:id', bodyValidation(UserUpdateSchema), UserController.update );
 
-userRouter.delete('/:id', authAdmin, UserController.deleteAdmin );
+userRouter.delete('/:id', authAdmin, UserController.deleteUser );
 
 userRouter.post('/activate/:id', authAdmin, UserController.activate );
 
