@@ -136,7 +136,7 @@ export const search = async (props: any, page: number = 1) => {
     }
 
     let queryText = `SELECT *, count(*) OVER() AS count FROM admins WHERE ${querys.join(' OR ')} \
-    LIMIT 10 OFFSET (($${i} - 1) * 10)`;
+    ORDER BY id ASC LIMIT 10 OFFSET (($${i} - 1) * 10)`;
     
     if(values.length === 0) {
         queryText = queryText.replace('WHERE', '');
@@ -145,8 +145,6 @@ export const search = async (props: any, page: number = 1) => {
     if(page < 1) page = 1;
 
     const { rows } = await query(queryText, [...values, page]);
-
-    console.log(rows);
 
     return [rows.map(x => recursiveToCamel(x) as Admin), rows[0] ? rows[0].count : 0 ];
 }

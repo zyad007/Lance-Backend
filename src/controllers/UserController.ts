@@ -106,7 +106,6 @@ export const register: RequestHandler = async (req, res, next) => {
 
 }
 
-
 export const create: RequestHandler = async (req, res, next) => {
 
     try {
@@ -146,7 +145,6 @@ export const create: RequestHandler = async (req, res, next) => {
     }
 
 }
-
 
 export const forgotPassword: RequestHandler = async (req, res, next) => {
 
@@ -230,7 +228,7 @@ export const getAll: RequestHandler = async (req, res, next) => {
 
 }
 
-export const deleteAdmin: RequestHandler<{ id: string }> = async (req, res, next) => {
+export const deleteUser: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {
 
         const { id } = req.params;
@@ -317,7 +315,6 @@ export const activate: RequestHandler<{ id: string }> = async (req, res, next) =
         next(e);
     }
 }
-
 
 export const disable: RequestHandler<{ id: string }> = async (req, res, next) => {
     try {

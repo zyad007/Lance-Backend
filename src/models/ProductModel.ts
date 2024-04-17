@@ -3,10 +3,10 @@ import { Product } from "../interfaces/Product";
 
 export const create = async (product: Product) => {
 
-    const queryText = 'INSERT INTO products ( \
+    const queryText = 'INSERT INTO products (\
     description, \
-    prod_status \
-    ) VALUES ($1,$2) RETURNING *'
+    prod_status) \
+    VALUES ($1, $2) RETURNING *'
 
     const { rows } = await query(queryText, [
         product.description,
@@ -25,13 +25,22 @@ export const getById = async (id: number) => {
         return undefined
     }
 
-    const product: Product = recursiveToCamel(rows[0]);
-    return product
+    const prod: Product = recursiveToCamel(rows[0]);
+    return prod
 }
 
 export const getAll = async () => {
     const { rows } = await query('SELECT * FROM products', []);
     return rows.map(x => recursiveToCamel(x) as Product);
+}
+
+export const getByEmail = async (email: string) => {
+    const { rows } = await query('SELECT * FROM products WHERE email = $1', [email]);
+
+    if (!rows[0]) return undefined;
+
+    const user = recursiveToCamel(rows[0]) as Product;
+    return user;
 }
 
 export const deleteById = async (id: number) => {
@@ -47,6 +56,7 @@ export const updateById = async (id: number, newProps: any) => {
 
     let i = 2;
     for (const [key, value] of Object.entries(newProps)) {
+        if (!value) continue;
         querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
         i++;
@@ -58,8 +68,8 @@ export const updateById = async (id: number, newProps: any) => {
 
     const { rows } = await query(queryText, [id, ...values]);
 
-    const product: Product = recursiveToCamel(rows[0])
-    return product;
+    const prod: Product = recursiveToCamel(rows[0])
+    return prod;
 }
 
 export const getOne = async (props: any) => {
@@ -68,7 +78,8 @@ export const getOne = async (props: any) => {
 
     let i = 1;
     for (const [key, value] of Object.entries(props)) {
-        querys.push(camleToSnake(key) + '=' + '$' + i );
+        if (!value) continue;
+        querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
         i++;
     }
@@ -77,25 +88,62 @@ export const getOne = async (props: any) => {
 
     const { rows } = await query(queryText, [...values]);
 
-    const product: Product = recursiveToCamel(rows[0])
-    return product;
+    const admin: Product = recursiveToCamel(rows[0])
+    return admin;
 }
 
-export const getMany = async (props: any) => {
+export const getMany = async (props: any, page: number) => {
     const querys: string[] = [];
     const values: any[] = [];
 
     let i = 1;
     for (const [key, value] of Object.entries(props)) {
-        querys.push(camleToSnake(key) + '=' + '$' + i );
+        if (!value) continue;
+        querys.push(camleToSnake(key) + '=' + '$' + i);
         values.push(value);
+        i++;
     }
 
-    const queryText = `SELECT * FROM products WHERE ${querys.join(' AND ')}`;
+    const queryText = `SELECT * FROM products WHERE ${querys.join(' AND ')} \
+    LIMIT 10 OFFSET {($${i} - 1) * 10}`;
 
-    const { rows } = await query(queryText, [...values]);
+    const { rows } = await query(queryText, [...values, page]);
 
     return rows.map(x => recursiveToCamel(x) as Product);
+}
+
+export const search = async (props: any, page: number = 1) => {
+    const querys: string[] = [];
+    const values: any[] = [];
+
+    let i = 1;
+    for (const [key, value] of Object.entries(props)) {
+        if (!value) continue;
+        querys.push(camleToSnake(key) + ' LIKE ' + '$' + i);
+        values.push('%' + value);
+        i++;
+    }
+
+    let queryText = `SELECT *, count(*) OVER() AS count FROM products WHERE ${querys.join(' OR ')} \
+    ORDER BY id ASC LIMIT 10 OFFSET (($${i} - 1) * 10)`;
+
+    if (values.length === 0) {
+        queryText = queryText.replace('WHERE', '');
+    }
+
+    if (page < 1) page = 1;
+
+    const { rows } = await query(queryText, [...values, page]);
+
+    return [rows.map(x => recursiveToCamel(x) as Product), rows[0] ? rows[0].count : 0];
+}
+
+const count = async () => {
+
+    const { rows } = await query('SELECT COUNT(*) FROM products', []);
+
+    return rows[0];
+
 }
 
 
@@ -106,7 +154,10 @@ const ProductModel = {
     getOne,
     getMany,
     updateById,
-    deleteById
+    deleteById,
+    getByEmail,
+    search,
+    count
 }
 
 export default ProductModel;
@@ -114,15 +165,19 @@ export default ProductModel;
 //////////////////////////////////////////////
 const recursiveToCamel = (item: any): any => {
     if (Array.isArray(item)) {
-        return item.map(el => recursiveToCamel(el));
+        return item.map((el: unknown) => recursiveToCamel(el));
     } else if (typeof item === 'function' || item !== Object(item)) {
+        return item;
+    } else if (item instanceof Date) {
         return item;
     }
     return Object.fromEntries(
-        Object.entries(item).map(([key, value]) => [
-            key.replace(/([-_][a-z])/gi, c => c.toUpperCase().replace(/[-_]/g, '')),
-            recursiveToCamel(value),
-        ]),
+        Object.entries(item as Record<string, unknown>).map(
+            ([key, value]: [string, unknown]) => [
+                key.replace(/([-_][a-z])/gi, c => c.toUpperCase().replace(/[-_]/g, '')),
+                recursiveToCamel(value),
+            ],
+        ),
     );
 };
 
